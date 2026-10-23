@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PİKSEL ARENA — Satranç Meyhanesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#14170f;
+    --bg-panel:#241b12;
+    --wood:#3a2a1c;
+    --wood-light:#573f28;
+    --sq-light:#7c8a5c;
+    --sq-dark:#333f22;
+    --sq-select:#c9a227;
+    --sq-move:#8fae4a;
+    --sq-check:#a83232;
+    --amber:#d4a017;
+    --amber-bright:#f2c94c;
+    --parchment:#e8e0c8;
+    --parchment-dim:#a89f86;
+    --blood:#8a2b1f;
+    --ink:#0c0e08;
+    --white-piece:#f0ead6;
+    --white-edge:#8a7a4f;
+    --black-piece:#1c1a14;
+    --black-edge:#000;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 50% -10%, #2a2114 0%, var(--bg-deep) 55%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 2px, transparent 2px, transparent 4px);
+    color:var(--parchment);
+    font-family:'VT323', monospace;
+    font-size:20px;
+    min-height:100vh;
+    overflow-x:hidden;
+    image-rendering:pixelated;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  ::selection{background:var(--amber); color:var(--ink);}
+  .pixel{ font-family:'Press Start 2P', monospace; }
+  button, input{ font-family:'VT323', monospace; font-size:20px; }
+
+  #app{
+    width:100%;
+    max-width:520px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40px),
+      var(--bg-deep);
+    border-left:3px solid var(--wood);
+    border-right:3px solid var(--wood);
+  }
+
+  /* ---------- HEADER / SIGNBOARD ---------- */
+  .signboard{
+    text-align:center;
+    padding:18px 12px 10px;
+    position:relative;
+  }
+  .signboard h1{
+    font-family:'Press Start 2P', monospace;
+    font-size:20px;
+    color:var(--amber-bright);
+    letter-spacing:1px;
+    margin:0;
+    text-shadow:3px 3px 0 #000, 0 0 18px rgba(212,160,23,0.35);
+  }
+  .signboard .sub{
+    color:var(--parchment-dim);
+    font-size:16px;
+    margin-top:4px;
+    letter-spacing:2px;
+  }
+  .torch{
+    position:absolute; top:14px; width:14px; height:14px;
+    background:var(--amber-bright);
+    box-shadow:0 0 12px 6px rgba(242,201,76,0.55), 0 0 2px #fff;
+    animation:flicker 1.4s infinite steps(6);
+    border-radius:2px;
+  }
+  .torch.left{left:14px;}
+  .torch.right{right:14px;}
+  @keyframes flicker{
+    0%,100%{opacity:1; transform:scale(1);}
+    20%{opacity:0.7; transform:scale(0.85);}
+    40%{opacity:1; transform:scale(1.05);}
+    60%{opacity:0.8; transform:scale(0.9);}
+    80%{opacity:1; transform:scale(1);}
+  }
+
+  /* ---------- SCREENS ---------- */
+  .screen{ padding:10px 16px 24px; flex:1; display:flex; flex-direction:column; }
+  .hidden{ display:none !important; }
+
+  .panel{
+    background:var(--wood);
+    border:3px solid var(--ink);
+    box-shadow:inset 0 0 0 2px var(--wood-light), 4px 4px 0 rgba(0,0,0,0.4);
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .panel h2{
+    font-family:'Press Start 2P', monospace;
+    font-size:13px;
+    color:var(--amber);
+    margin:0 0 12px;
+  }
+  label{ display:block; color:var(--parchment-dim); font-size:16px; margin-bottom:4px; letter-spacing:1px;}
+  input[type=text]{
+    width:100%;
+    background:var(--ink);
+    border:2px solid var(--wood-light);
+    color:var(--parchment);
+    padding:9px 10px;
+    margin-bottom:12px;
+    outline:none;
+  }
+  input[type=text]:focus{ border-color:var(--amber); }
+
+  .btn{
+    display:block;
+    width:100%;
+    text-align:center;
+    background:linear-gradient(180deg, var(--wood-light), var(--wood));
+    border:2px solid var(--ink);
+    color:var(--parchment);
+    padding:12px 14px;
+    font-size:17px;
+    letter-spacing:1px;
+    cursor:pointer;
+    box-shadow:3px 3px 0 #000;
+    margin-bottom:10px;
+    transition:transform .06s;
+    text-transform:uppercase;
+  }
+  .btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+  .btn.primary{ background:linear-gradient(180deg, var(--amber-bright), var(--amber)); color:var(--ink); font-weight:bold;}
+  .btn.danger{ background:linear-gradient(180deg,#a8402f,#7a2418); }
+  .btn.ghost{ background:transparent; box-shadow:none; border:2px dashed var(--wood-light); color:var(--parchment-dim); }
+  .btn.small{ width:auto; display:inline-block; padding:8px 12px; font-size:15px; margin:3px; }
+  .btnrow{ display:flex; gap:8px; }
+  .btnrow .btn{ flex:1; }
+
+  .divider{
+    text-align:center; color:var(--parchment-dim); font-size:14px;
+    margin:8px 0; letter-spacing:3px;
+  }
+
+  .code-display{
+    font-family:'Press Start 2P', monospace;
+    font-size:26px;
+    letter-spacing:8px;
+    text-align:center;
+    color:var(--amber-bright);
+    background:var(--ink);
+    padding:14px;
+    border:2px dashed var(--amber);
+    margin-bottom:12px;
+    word-break:break-all;
+  }
+  .hint{ color:var(--parchment-dim); font-size:15px; text-align:center; margin-top:2px;}
+
+  /* ---------- GAME HUD ---------- */
+  .hud{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 4px 10px;
+  }
+  .player-tag{
+    display:flex; align-items:center; gap:8px;
+    background:var(--wood); border:2px solid var(--ink); padding:6px 10px;
+    box-shadow:2px 2px 0 #000;
+  }
+  .player-tag.active{ box-shadow:2px 2px 0 #000, 0 0 10px var(--amber); border-color:var(--amber); }
+  .swatch{ width:16px; height:16px; border:2px solid var(--ink); }
+  .swatch.w{ background:var(--white-piece); }
+  .swatch.b{ background:var(--black-piece); }
+  .player-tag .nm{ font-size:16px; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .vs{ font-family:'Press Start 2P'; font-size:11px; color:var(--parchment-dim); }
+
+  .status-line{
+    text-align:center; font-size:17px; color:var(--amber-bright);
+    min-height:24px; letter-spacing:1px; margin-bottom:6px;
+  }
+
+  /* ---------- BOARD ---------- */
+  .board-wrap{
+    position:relative;
+    display:flex; justify-content:center;
+    margin:4px 0 12px;
+  }
+  #boardCanvas{
+    border:4px solid var(--ink);
+    box-shadow:0 0 0 3px var(--wood-light), 6px 6px 0 rgba(0,0,0,0.45);
+    touch-action:none;
+    background:var(--sq-dark);
+  }
+
+  .captured-row{
+    display:flex; flex-wrap:wrap; gap:3px; min-height:22px; padding:0 6px;
+  }
+  .captured-row canvas{ width:16px; height:16px; }
+
+  /* ---------- TAUNT FX ---------- */
+  #fxLayer{
+    position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:40;
+  }
+  .fx-emoji{
+    position:absolute;
+    font-size:38px;
+    animation:fxPop 1.1s ease-out forwards;
+    filter:drop-shadow(2px 2px 0 #000);
+  }
+  @keyframes fxPop{
+    0%{ transform:translateY(10px) scale(0.3) rotate(-8deg); opacity:0; }
+    15%{ transform:translateY(-6px) scale(1.3) rotate(6deg); opacity:1; }
+    30%{ transform:translateY(0) scale(1) rotate(0deg); }
+    80%{ transform:translateY(-18px) scale(1); opacity:1; }
+    100%{ transform:translateY(-34px) scale(0.8); opacity:0; }
+  }
+  .fx-banner{
+    position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    font-family:'Press Start 2P'; color:var(--amber-bright);
+    text-shadow:3px 3px 0 #000; font-size:15px; text-align:center;
+    background:rgba(12,14,8,0.85); border:2px solid var(--amber); padding:10px 14px;
+    animation:fxBanner 1.3s ease-out forwards; white-space:nowrap;
+  }
+  @keyframes fxBanner{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(0.6); }
+    12%{ opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+    20%{ transform:translate(-50%,-50%) scale(1); }
+    82%{ opacity:1; }
+    100%{ opacity:0; transform:translate(-50%,-58%) scale(0.95); }
+  }
+  .shake{ animation:shake .4s; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-6px) rotate(-0.4deg); }
+    40%{ transform:translateX(5px) rotate(0.4deg); }
+    60%{ transform:translateX(-4px); }
+    80%{ transform:translateX(3px); }
+  }
+
+  /* ---------- CHAT ---------- */
+  .chat-toggle-bar{
+    display:flex; gap:8px; margin-bottom:8px;
+  }
+
+  .taunt-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px;
+  }
+  .taunt-btn{
+    background:var(--ink); border:2px solid var(--wood-light); color:var(--parchment);
+    font-size:22px; padding:8px 2px; cursor:pointer; box-shadow:2px 2px 0 #000;
+  }
+  .taunt-btn:active{ transform:translate(1px,1px); box-shadow:1px 1px 0 #000; background:var(--blood);}
+
+  .chat-log{
+    height:150px; overflow-y:auto; background:var(--ink); border:2px solid var(--wood-light);
+    padding:8px; margin-bottom:8px; font-size:17px;
+  }
+  .chat-msg{ margin-bottom:5px; line-height:1.25; word-break:break-word; }
+  .chat-msg .who{ color:var(--amber); }
+  .chat-msg.system{ color:var(--parchment-dim); font-style:italic; }
+  .chat-msg.taunt{ color:#ff9d6c; }
+  .chat-input-row{ display:flex; gap:6px; }
+  .chat-input-row input{ flex:1; margin-bottom:0; }
+  .chat-input-row .btn{ width:auto; margin-bottom:0; padding:9px 14px; }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:80;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal{
+    background:var(--wood); border:3px solid var(--ink); box-shadow:6px 6px 0 #000;
+    padding:20px; max-width:360px; width:100%; text-align:center;
+  }
+  .modal h3{ font-family:'Press Start 2P'; font-size:14px; color:var(--amber-bright); margin:0 0 14px;}
+  .promo-row{ display:flex; gap:10px; justify-content:center; margin-top:8px; }
+  .promo-choice{
+    background:var(--ink); border:2px solid var(--wood-light); cursor:pointer; padding:6px;
+  }
+  .promo-choice:active{ border-color:var(--amber); }
+
+  footer.tip{ text-align:center; color:var(--parchment-dim); font-size:14px; padding:6px 20px 16px; }
+
+  @media (max-width:380px){
+    #boardCanvas{ width:300px !important; height:300px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="signboard">
+    <div class="torch left"></div>
+    <div class="torch right"></div>
+    <h1>PİKSEL ARENA</h1>
+    <div class="sub">⚔ satranç meyhanesi ⚔</div>
+  </div>
+
+  <!-- MENU SCREEN -->
+  <div class="screen" id="screen-menu">
+    <div class="panel">
+      <h2>OYUNCU</h2>
+      <label>Rumuzun</label>
+      <input type="text" id="nameInput" maxlength="14" placeholder="ör. KaraFil">
+    </div>
+
+    <div class="panel">
+      <h2>YENİ ODA KUR</h2>
+      <p class="hint" style="margin-bottom:10px;">Bir kod üretilir, arkadaşına gönder.</p>
+      <button class="btn primary" id="btnCreate">🏰 ODA KUR (Beyaz)</button>
+    </div>
+
+    <div class="divider">— ya da —</div>
+
+    <div class="panel">
+      <h2>ODAYA KATIL</h2>
+      <label>Oda Kodu</label>
+      <input type="text" id="joinCodeInput" maxlength="5" placeholder="ör. F7K2X" style="text-transform:uppercase;">
+      <button class="btn primary" id="btnJoin">⚔️ KATIL (Siyah)</button>
+    </div>
+
+    <div class="divider">— ya da —</div>
+    <div class="panel">
+      <h2>AYNI CİHAZDAN</h2>
+      <p class="hint" style="margin-bottom:10px;">Tek telefonu elden ele geçirerek oynayın.</p>
+      <button class="btn ghost" id="btnLocal">📱 TEK CİHAZ, İKİ OYUNCU</button>
+    </div>
+  </div>
+
+  <!-- LOBBY SCREEN -->
+  <div class="screen hidden" id="screen-lobby">
+    <div class="panel">
+      <h2>ODA HAZIR</h2>
+      <div class="code-display" id="lobbyCode">-----</div>
+      <p class="hint">Bu kodu arkadaşına yolla, "Odaya Katıl" desin.</p>
+    </div>
+    <div class="panel">
+      <h2>DURUM</h2>
+      <p id="lobbyStatus" class="hint">Rakip bekleniyor...</p>
+    </div>
+    <button class="btn danger" id="btnLeaveLobby">İptal Et</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen hidden" id="screen-game">
+    <div class="hud">
+      <div class="player-tag" id="tagBlack"><div class="swatch b"></div><span class="nm" id="nameBlack">Siyah</span></div>
+      <div class="vs">VS</div>
+      <div class="player-tag" id="tagWhite"><div class="swatch w"></div><span class="nm" id="nameWhite">Beyaz</span></div>
+    </div>
+    <div class="captured-row" id="capturedTop"></div>
+    <div class="status-line" id="statusLine">Beyaz başlıyor</div>
+
+    <div class="board-wrap">
+      <canvas id="boardCanvas" width="336" height="336"></canvas>
+      <div id="fxLayer"></div>
+    </div>
+    <div class="captured-row" id="capturedBottom"></div>
+
+    <div class="taunt-grid" id="tauntGrid"></div>
+
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" maxlength="80" placeholder="bir laf sok...">
+      <button class="btn" id="btnSendChat">Gönder</button>
+    </div>
+
+    <div class="btnrow" style="margin-top:10px;">
+      <button class="btn ghost small" id="btnResign">🏳️ Pes Et</button>
+      <button class="btn ghost small" id="btnExit">🚪 Çık</button>
+    </div>
+  </div>
+
+  <footer class="tip">piksel arena — cihazlar arası eşzamanlama birkaç saniye sürebilir</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   PIXEL PIECE BITMAPS (8x8) — '#' filled, '.' empty
+========================================================= */
+const SPRITES = {
+  p:["...##...","..####..","..####..","...##...","..####..",".######.",".######.","########"],
+  r:["#.##.##.","########",".######.","..####..","..####..","..####..",".######.","########"],
+  n:["..####..",".#####..",".######.","###.###.","..#####.","..####..",".######.","########"],
+  b:["...##...","..####..","...##...","..####..","..####..","...##...",".######.","########"],
+  q:["#.#.#.#.","#######.",".######.","..####..","..####..",".######.",".######.","########"],
+  k:["...##...","..####..","...##...",".######.","..####..","..####..",".######.","########"]
+};
+
+/* =========================================================
+   CHESS ENGINE
+========================================================= */
+function initialBoard(){
+  const back = ["r","n","b","q","k","b","n","r"];
+  const b = [];
+  b.push(back.map(t=>({type:t,color:"b"})));
+  b.push(Array(8).fill(0).map(()=>({type:"p",color:"b"})));
+  for(let i=0;i<4;i++) b.push(Array(8).fill(null));
+  b.push(Array(8).fill(0).map(()=>({type:"p",color:"w"})));
+  b.push(back.map(t=>({type:t,color:"w"})));
+  return b;
+}
+function cloneBoard(b){ return b.map(row=>row.map(c=>c?{...c}:null)); }
+function inBounds(r,c){ return r>=0&&r<8&&c>=0&&c<8; }
+function opp(color){ return color==="w"?"b":"w"; }
+
+function findKing(board,color){
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(p && p.type==="k" && p.color===color) return {r,c};
+  }
+  return null;
+}
+
+function isSquareAttacked(board, r, c, byColor){
+  // pawn
+  const dir = byColor==="w"? 1 : -1; // pawn of byColor attacks from behind relative dir
+  for(const dc of [-1,1]){
+    const pr=r+dir, pc=c+dc;
+    if(inBounds(pr,pc)){
+      const p=board[pr][pc];
+      if(p && p.color===byColor && p.type==="p") return true;
+    }
+  }
+  // knight
+  const knightMoves=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+  for(const [dr,dc] of knightMoves){
+    const nr=r+dr,nc=c+dc;
+    if(inBounds(nr,nc)){
+      const p=board[nr][nc];
+      if(p && p.color===byColor && p.type==="n") return true;
+    }
+  }
+  // king
+  for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+    if(dr===0&&dc===0) continue;
+    const nr=r+dr,nc=c+dc;
+    if(inBounds(nr,nc)){
+      const p=board[nr][nc];
+      if(p && p.color===byColor && p.type==="k") return true;
+    }
+  }
+  // sliding: rook/queen straight
+  const straight=[[-1,0],[1,0],[0,-1],[0,1]];
+  for(const [dr,dc] of straight){
+    let nr=r+dr,nc=c+dc;
+    while(inBounds(nr,nc)){
+      const p=board[nr][nc];
+      if(p){
+        if(p.color===byColor && (p.type==="r"||p.type==="q")) return true;
+        break;
+      }
+      nr+=dr; nc+=dc;
+    }
+  }
+  // sliding: bishop/queen diagonal
+  const diag=[[-1,-1],[-1,1],[1,-1],[1,1]];
+  for(const [dr,dc] of diag){
+    let nr=r+dr,nc=c+dc;
+    while(inBounds(nr,nc)){
+      const p=board[nr][nc];
+      if(p){
+        if(p.color===byColor && (p.type==="b"||p.type==="q")) return true;
+        break;
+      }
+      nr+=dr; nc+=dc;
+    }
+  }
+  return false;
+}
+
+function pseudoMoves(board, r, c, state){
+  const p = board[r][c];
+  if(!p) return [];
+  const moves=[];
+  const add=(nr,nc,flags)=>{ if(inBounds(nr,nc)) moves.push({r,c,tr:nr,tc:nc,...flags}); };
+
+  if(p.type==="p"){
+    const dir = p.color==="w"? -1: 1;
+    const startRow = p.color==="w"? 6:1;
+    const promoRow = p.color==="w"? 0:7;
+    // forward
+    if(inBounds(r+dir,c) && !board[r+dir][c]){
+      add(r+dir,c,{promotion: r+dir===promoRow});
+      if(r===startRow && !board[r+2*dir][c]){
+        add(r+2*dir,c,{doubleStep:true});
+      }
+    }
+    // captures
+    for(const dc of [-1,1]){
+      const nr=r+dir, nc=c+dc;
+      if(inBounds(nr,nc)){
+        const target=board[nr][nc];
+        if(target && target.color!==p.color){
+          add(nr,nc,{capture:true, promotion: nr===promoRow});
+        } else if(state.enPassant && state.enPassant.r===nr && state.enPassant.c===nc){
+          add(nr,nc,{capture:true, enPassantCapture:true});
+        }
+      }
+    }
+  } else if(p.type==="n"){
+    const km=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    for(const [dr,dc] of km){
+      const nr=r+dr,nc=c+dc;
+      if(inBounds(nr,nc)){
+        const t=board[nr][nc];
+        if(!t || t.color!==p.color) add(nr,nc,{capture:!!t});
+      }
+    }
+  } else if(p.type==="k"){
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0) continue;
+      const nr=r+dr,nc=c+dc;
+      if(inBounds(nr,nc)){
+        const t=board[nr][nc];
+        if(!t || t.color!==p.color) add(nr,nc,{capture:!!t});
+      }
+    }
+    // castling
+    const rights = state.castling[p.color];
+    const homeRow = p.color==="w"?7:0;
+    if(r===homeRow && c===4 && !isSquareAttacked(board,r,c,opp(p.color))){
+      if(rights.k && !board[homeRow][5] && !board[homeRow][6] && board[homeRow][7] && board[homeRow][7].type==="r"){
+        if(!isSquareAttacked(board,homeRow,5,opp(p.color)) && !isSquareAttacked(board,homeRow,6,opp(p.color))){
+          add(homeRow,6,{castle:"k"});
+        }
+      }
+      if(rights.q && !board[homeRow][3] && !board[homeRow][2] && !board[homeRow][1] && board[homeRow][0] && board[homeRow][0].type==="r"){
+        if(!isSquareAttacked(board,homeRow,3,opp(p.color)) && !isSquareAttacked(board,homeRow,2,opp(p.color))){
+          add(homeRow,2,{castle:"q"});
+        }
+      }
+    }
+  } else {
+    let dirs=[];
+    if(p.type==="r") dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+    if(p.type==="b") dirs=[[-1,-1],[-1,1],[1,-1],[1,1]];
+    if(p.type==="q") dirs=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+    for(const [dr,dc] of dirs){
+      let nr=r+dr,nc=c+dc;
+      while(inBounds(nr,nc)){
+        const t=board[nr][nc];
+        if(!t){ add(nr,nc,{}); }
+        else{ if(t.color!==p.color) add(nr,nc,{capture:true}); break; }
+        nr+=dr; nc+=dc;
+      }
+    }
+  }
+  return moves;
+}
+
+function applyMove(board, state, move, promoType){
+  const nb = cloneBoard(board);
+  const piece = nb[move.r][move.c];
+  const newState = {
+    castling: JSON.parse(JSON.stringify(state.castling)),
+    enPassant: null
+  };
+  // en passant capture removes pawn behind target
+  if(move.enPassantCapture){
+    const capR = piece.color==="w"? move.tr+1: move.tr-1;
+    nb[capR][move.tc]=null;
+  }
+  nb[move.tr][move.tc] = piece;
+  nb[move.r][move.c] = null;
+
+  if(move.promotion){
+    nb[move.tr][move.tc] = {type: promoType||"q", color: piece.color};
+  }
+  if(move.doubleStep){
+    newState.enPassant = { r:(move.r+move.tr)/2, c:move.c };
+  }
+  if(move.castle){
+    const homeRow = piece.color==="w"?7:0;
+    if(move.castle==="k"){
+      nb[homeRow][5]=nb[homeRow][7]; nb[homeRow][7]=null;
+    } else {
+      nb[homeRow][3]=nb[homeRow][0]; nb[homeRow][0]=null;
+    }
+  }
+  // update castling rights
+  if(piece.type==="k"){ newState.castling[piece.color]={k:false,q:false}; }
+  if(piece.type==="r"){
+    const homeRow = piece.color==="w"?7:0;
+    if(move.r===homeRow && move.c===0) newState.castling[piece.color].q=false;
+    if(move.r===homeRow && move.c===7) newState.castling[piece.color].k=false;
+  }
+  // if a rook got captured on its home square
+  const capturedHomeCheck=(color,row,col)=>{
+    if(row===(color==="w"?7:0) && col===0) newState.castling[color].q=false;
+    if(row===(color==="w"?7:0) && col===7) newState.castling[color].k=false;
+  };
+  if(move.capture && !move.enPassantCapture){
+    // captured piece color is opposite of mover
+    capturedHomeCheck(opp(piece.color), move.tr, move.tc);
+  }
+
+  return {board:nb, state:newState};
+}
+
+function legalMoves(board, r, c, state){
+  const p=board[r][c];
+  if(!p) return [];
+  const pseudo = pseudoMoves(board,r,c,state);
+  return pseudo.filter(m=>{
+    const {board:nb} = applyMove(board,state,m,"q");
+    const kingPos = findKing(nb,p.color);
+    if(!kingPos) return false;
+    return !isSquareAttacked(nb, kingPos.r, kingPos.c, opp(p.color));
+  });
+}
+
+function allLegalMoves(board, state, color){
+  let all=[];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(p && p.color===color){
+      all = all.concat(legalMoves(board,r,c,state));
+    }
+  }
+  return all;
+}
+
+function isInCheck(board, state, color){
+  const k = findKing(board,color);
+  if(!k) return false;
+  return isSquareAttacked(board,k.r,k.c,opp(color));
+}
+
+/* =========================================================
+   STORAGE HELPERS (shared multiplayer)
+========================================================= */
+async function storeGet(key, shared){
+  try{ const r = await window.storage.get(key, !!shared); return r? JSON.parse(r.value): null; }
+  catch(e){ return null; }
+}
+async function storeSet(key, value, shared){
+  try{ await window.storage.set(key, JSON.stringify(value), !!shared); return true; }
+  catch(e){ return false; }
+}
+
+/* =========================================================
+   APP STATE
+========================================================= */
+const $ = sel=>document.querySelector(sel);
+const els = {
+  screenMenu: $("#screen-menu"), screenLobby: $("#screen-lobby"), screenGame: $("#screen-game"),
+  nameInput: $("#nameInput"), joinCodeInput: $("#joinCodeInput"),
+  btnCreate: $("#btnCreate"), btnJoin: $("#btnJoin"), btnLocal: $("#btnLocal"),
+  lobbyCode: $("#lobbyCode"), lobbyStatus: $("#lobbyStatus"), btnLeaveLobby: $("#btnLeaveLobby"),
+  tagWhite: $("#tagWhite"), tagBlack: $("#tagBlack"), nameWhite: $("#nameWhite"), nameBlack: $("#nameBlack"),
+  statusLine: $("#statusLine"), boardCanvas: $("#boardCanvas"), fxLayer: $("#fxLayer"),
+  capturedTop: $("#capturedTop"), capturedBottom: $("#capturedBottom"),
+  tauntGrid: $("#tauntGrid"), chatLog: $("#chatLog"), chatInput: $("#chatInput"), btnSendChat: $("#btnSendChat"),
+  btnResign: $("#btnResign"), btnExit: $("#btnExit"), app: $("#app")
+};
+const ctx = els.boardCanvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+let mode = null; // 'online' | 'local'
+let myColor = "w"; // for online mode
+let roomCode = null;
+let playerName = "Oyuncu";
+let pollTimer = null;
+
+let game = {
+  board: initialBoard(),
+  turn: "w",
+  castling: {w:{k:true,q:true}, b:{k:true,q:true}},
+  enPassant: null,
+  captured: {w:[], b:[]}, // pieces captured BY white, BY black
+  status: "playing", // playing | check | checkmate | stalemate | resigned
+  winner: null,
+  history: [],
+  chat: [],
+  players: {white:"Beyaz", black:"Siyah"},
+  updatedAt: 0
+};
+
+let selected = null; // {r,c}
+let selectedLegal = [];
+let lastMove = null; // {r,c,tr,tc}
+let pendingPromotion = null; // {r,c,tr,tc,color}
+
+const TAUNTS = [
+  {e:"😤", t:"Bu hamle su döktü!"},
+  {e:"🔥", t:"Yanıyorsun, hazır ol!"},
+  {e:"🤡", t:"Palyaço gibi oynuyorsun!"},
+  {e:"💀", t:"Şah'ın son nefesini veriyor."},
+  {e:"🐌", t:"Yavaş oyna dede, acelen yok."},
+  {e:"🥱", t:"Uyuyakalıyorum, hamle et."},
+  {e:"🎯", t:"Tam hedef üstünde!"},
+  {e:"🚨", t:"Alarm! Kaçış yok!"}
+];
+
+/* =========================================================
+   RENDER: BOARD
+========================================================= */
+const SQ = 42; // css px per square
+function resizeCanvas(){
+  const w = Math.min(340, window.innerWidth - 40);
+  const size = Math.floor(w/8)*8;
+  els.boardCanvas.style.width = size+"px";
+  els.boardCanvas.style.height = size+"px";
+  els.boardCanvas.width = size;
+  els.boardCanvas.height = size;
+  drawBoard();
+}
+
+function squareColor(r,c){ return (r+c)%2===0 ? "sqlight":"sqdark"; }
+
+function drawBoard(){
+  const n = els.boardCanvas.width;
+  const sq = n/8;
+  const flip = (mode==="online" && myColor==="b");
+  ctx.clearRect(0,0,n,n);
+  for(let rr=0; rr<8; rr++){
+    for(let cc=0; cc<8; cc++){
+      const r = flip? 7-rr: rr;
+      const c = flip? 7-cc: cc;
+      const light = (r+c)%2===0;
+      ctx.fillStyle = light? getCss("--sq-light") : getCss("--sq-dark");
+      ctx.fillRect(cc*sq, rr*sq, sq, sq);
+
+      // last move highlight
+      if(lastMove && ((lastMove.r===r&&lastMove.c===c)||(lastMove.tr===r&&lastMove.tc===c))){
+        ctx.fillStyle = "rgba(201,162,39,0.35)";
+        ctx.fillRect(cc*sq, rr*sq, sq, sq);
+      }
+      // selected
+      if(selected && selected.r===r && selected.c===c){
+        ctx.fillStyle = "rgba(201,162,39,0.55)";
+        ctx.fillRect(cc*sq, rr*sq, sq, sq);
+      }
+      // legal move dot
+      const lm = selectedLegal.find(m=>m.tr===r && m.tc===c);
+      if(lm){
+        ctx.fillStyle = lm.capture? "rgba(168,50,50,0.55)":"rgba(143,174,74,0.65)";
+        if(lm.capture){
+          ctx.fillRect(cc*sq, rr*sq, sq, sq);
+        } else {
+          ctx.beginPath();
+          ctx.arc(cc*sq+sq/2, rr*sq+sq/2, sq*0.14, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+      // check highlight
+      const p = game.board[r][c];
+      if(p && p.type==="k" && (game.status==="check"||game.status==="checkmate") && p.color===game.turn){
+        ctx.fillStyle = "rgba(168,50,50,0.5)";
+        ctx.fillRect(cc*sq, rr*sq, sq, sq);
+      }
+
+      if(p){ drawPiece(p, cc*sq, rr*sq, sq); }
+    }
+  }
+}
+
+function getCss(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+function drawPiece(piece, x, y, sq){
+  const grid = SPRITES[piece.type];
+  const cell = sq/10; // 8 rows but leave padding -> 10 units
+  const pad = cell;
+  const fill = piece.color==="w" ? getCss("--white-piece") : getCss("--black-piece");
+  const edge = piece.color==="w" ? getCss("--white-edge") : "#000";
+  for(let gr=0; gr<8; gr++){
+    for(let gc=0; gc<8; gc++){
+      if(grid[gr][gc]==="#"){
+        ctx.fillStyle = edge;
+        ctx.fillRect(x+pad+gc*cell-1, y+pad+gr*cell-1, cell+2, cell+2);
+      }
+    }
+  }
+  for(let gr=0; gr<8; gr++){
+    for(let gc=0; gc<8; gc++){
+      if(grid[gr][gc]==="#"){
+        ctx.fillStyle = fill;
+        ctx.fillRect(x+pad+gc*cell, y+pad+gr*cell, cell, cell);
+      }
+    }
+  }
+}
+
+function drawMiniPiece(canvas, piece){
+  const c2 = canvas.getContext("2d");
+  c2.imageSmoothingEnabled=false;
+  c2.clearRect(0,0,16,16);
+  const grid = SPRITES[piece.type];
+  const cell = 16/10;
+  const pad = cell;
+  const fill = piece.color==="w" ? getCss("--white-piece") : getCss("--black-piece");
+  for(let gr=0; gr<8; gr++) for(let gc=0; gc<8; gc++){
+    if(grid[gr][gc]==="#"){
+      c2.fillStyle = fill;
+      c2.fillRect(pad+gc*cell, pad+gr*cell, cell+0.6, cell+0.6);
+    }
+  }
+}
+
+/* =========================================================
+   RENDER: UI SYNC
+========================================================= */
+function renderAll(){
+  els.nameWhite.textContent = game.players.white || "Beyaz";
+  els.nameBlack.textContent = game.players.black || "Siyah";
+  els.tagWhite.classList.toggle("active", game.turn==="w" && game.status!=="checkmate" && game.status!=="stalemate");
+  els.tagBlack.classList.toggle("active", game.turn==="b" && game.status!=="checkmate" && game.status!=="stalemate");
+
+  let statusText = "";
+  if(game.status==="checkmate"){
+    const winner = game.turn==="w" ? game.players.black : game.players.white;
+    statusText = `♛ ŞAH MAT! ${winner} kazandı!`;
+  } else if(game.status==="stalemate"){
+    statusText = "Pat! Berabere.";
+  } else if(game.status==="resigned"){
+    statusText = `🏳️ ${game.winner==='w'?game.players.white:game.players.black} kazandı (rakip pes etti).`;
+  } else if(game.status==="check"){
+    statusText = `Şah! Sıra ${game.turn==="w"?"Beyaz":"Siyah"}'da`;
+  } else {
+    statusText = `Sıra ${game.turn==="w"?"Beyaz":"Siyah"}'da`;
+  }
+  els.statusLine.textContent = statusText;
+
+  // captured trays: top shows pieces captured by the color displayed at top (black tag), i.e. white pieces black has taken
+  renderCapturedRow(els.capturedTop, game.captured.b);
+  renderCapturedRow(els.capturedBottom, game.captured.w);
+
+  drawBoard();
+  renderChat();
+}
+
+function renderCapturedRow(container, pieces){
+  container.innerHTML="";
+  pieces.forEach(p=>{
+    const cv = document.createElement("canvas");
+    cv.width=16; cv.height=16;
+    container.appendChild(cv);
+    drawMiniPiece(cv, p);
+  });
+}
+
+function renderChat(){
+  els.chatLog.innerHTML = "";
+  (game.chat||[]).slice(-40).forEach(m=>{
+    const div = document.createElement("div");
+    div.className = "chat-msg" + (m.type==="system"?" system":"") + (m.type==="taunt"?" taunt":"");
+    if(m.type==="system"){
+      div.textContent = m.text;
+    } else {
+      div.innerHTML = `<span class="who">${escapeHtml(m.from)}:</span> ${escapeHtml(m.text)}`;
+    }
+    els.chatLog.appendChild(div);
+  });
+  els.chatLog.scrollTop = els.chatLog.scrollHeight;
+}
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+
+/* =========================================================
+   TAUNT UI + FX
+========================================================= */
+function buildTauntGrid(){
+  els.tauntGrid.innerHTML = "";
+  TAUNTS.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "taunt-btn";
+    b.textContent = t.e;
+    b.title = t.t;
+    b.addEventListener("click", ()=> sendTaunt(t));
+    els.tauntGrid.appendChild(b);
+  });
+}
+
+function playFx(emoji, banner){
+  const layer = els.fxLayer;
+  for(let i=0;i<5;i++){
+    const s = document.createElement("div");
+    s.className="fx-emoji";
+    s.textContent = emoji;
+    s.style.left = (10+Math.random()*80)+"%";
+    s.style.top = (30+Math.random()*30)+"%";
+    s.style.animationDelay=(i*0.06)+"s";
+    layer.appendChild(s);
+    setTimeout(()=>s.remove(), 1300);
+  }
+  if(banner){
+    const b = document.createElement("div");
+    b.className="fx-banner";
+    b.textContent = banner;
+    layer.appendChild(b);
+    setTimeout(()=>b.remove(), 1400);
+  }
+  els.app.classList.remove("shake"); void els.app.offsetWidth;
+  els.app.classList.add("shake");
+}
+
+async function sendTaunt(t){
+  await pushChat({from: playerName, text: t.t, type:"taunt"});
+  playFx(t.e, t.t.length<20 ? t.t.toUpperCase(): t.e+" "+t.e+" "+t.e);
+}
+
+async function sendChatText(){
+  const val = els.chatInput.value.trim();
+  if(!val) return;
+  els.chatInput.value="";
+  await pushChat({from: playerName, text: val, type:"msg"});
+}
+
+async function pushChat(entry){
+  entry.ts = Date.now();
+  if(mode==="local"){
+    game.chat.push(entry);
+    if(game.chat.length>60) game.chat = game.chat.slice(-60);
+    renderChat();
+    return;
+  }
+  // online: fetch latest, append, push
+  const latest = await storeGet(roomKey(), true);
+  if(latest){ game = mergeIncoming(latest); }
+  game.chat.push(entry);
+  if(game.chat.length>60) game.chat = game.chat.slice(-60);
+  game.updatedAt = Date.now();
+  await storeSet(roomKey(), game, true);
+  renderChat();
+}
+
+/* =========================================================
+   GAME FLOW
+========================================================= */
+function roomKey(){ return "chess-room-"+roomCode; }
+
+function freshGameState(whiteName, blackName){
+  return {
+    board: initialBoard(),
+    turn: "w",
+    castling: {w:{k:true,q:true}, b:{k:true,q:true}},
+    enPassant: null,
+    captured: {w:[], b:[]},
+    status: "playing",
+    winner: null,
+    history: [],
+    chat: [{type:"system", text:`${whiteName} (Beyaz) vs ${blackName||"?"} (Siyah) — oyun başladı!`, ts:Date.now()}],
+    players: {white: whiteName, black: blackName||""},
+    updatedAt: Date.now()
+  };
+}
+
+function genCode(){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s="";
+  for(let i=0;i<5;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+async function createRoom(){
+  playerName = els.nameInput.value.trim() || "Beyaz Oyuncu";
+  roomCode = genCode();
+  myColor = "w";
+  mode = "online";
+  game = freshGameState(playerName, "");
+  await storeSet(roomKey(), game, true);
+  showScreen("lobby");
+  els.lobbyCode.textContent = roomCode;
+  els.lobbyStatus.textContent = "Rakip bekleniyor...";
+  startLobbyPoll();
+}
+
+async function joinRoom(){
+  const code = els.joinCodeInput.value.trim().toUpperCase();
+  if(!code){ alert("Lütfen bir oda kodu gir."); return; }
+  playerName = els.nameInput.value.trim() || "Siyah Oyuncu";
+  const existing = await storeGet("chess-room-"+code, true);
+  if(!existing){ alert("Oda bulunamadı. Kodu kontrol et."); return; }
+  roomCode = code;
+  myColor = "b";
+  mode = "online";
+  game = existing;
+  game.players.black = playerName;
+  game.chat.push({type:"system", text:`${playerName} odaya katıldı. Oyun başlıyor!`, ts:Date.now()});
+  game.updatedAt = Date.now();
+  await storeSet(roomKey(), game, true);
+  stopPoll();
+  showScreen("game");
+  buildTauntGrid();
+  renderAll();
+  startGamePoll();
+}
+
+function startLobbyPoll(){
+  stopPoll();
+  pollTimer = setInterval(async ()=>{
+    const latest = await storeGet(roomKey(), true);
+    if(latest && latest.players.black){
+      game = latest;
+      stopPoll();
+      showScreen("game");
+      buildTauntGrid();
+      renderAll();
+      startGamePoll();
+    }
+  }, 2000);
+}
+
+function startGamePoll(){
+  stopPoll();
+  pollTimer = setInterval(async ()=>{
+    const latest = await storeGet(roomKey(), true);
+    if(latest && latest.updatedAt > (game.updatedAt||0)){
+      const prevChatLen = (game.chat||[]).length;
+      game = latest;
+      lastMove = game.lastMoveMarker || lastMove;
+      renderAll();
+      if(game.chat.length>prevChatLen){
+        // detect if newest is a taunt from opponent -> trigger fx
+        const newest = game.chat[game.chat.length-1];
+        if(newest && newest.type==="taunt" && newest.from!==playerName){
+          const found = TAUNTS.find(t=>t.t===newest.text);
+          playFx(found?found.e:"💥", newest.text.toUpperCase());
+        }
+      }
+    }
+  }, 1800);
+}
+
+function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+
+function mergeIncoming(latest){ return latest; }
+
+function startLocal(){
+  playerName = els.nameInput.value.trim() || "Oyuncular";
+  mode = "local";
+  myColor = "w";
+  roomCode = null;
+  game = freshGameState("Beyaz", "Siyah");
+  showScreen("game");
+  buildTauntGrid();
+  renderAll();
+}
+
+function showScreen(name){
+  els.screenMenu.classList.add("hidden");
+  els.screenLobby.classList.add("hidden");
+  els.screenGame.classList.add("hidden");
+  if(name==="menu") els.screenMenu.classList.remove("hidden");
+  if(name==="lobby") els.screenLobby.classList.remove("hidden");
+  if(name==="game"){ els.screenGame.classList.remove("hidden"); resizeCanvas(); }
+}
+
+/* =========================================================
+   MOVE HANDLING
+========================================================= */
+function myTurnAllowed(){
+  if(mode==="local") return true;
+  return game.turn===myColor;
+}
+
+async function commitMove(move, promoType){
+  const mover = game.board[move.r][move.c];
+  const targetBefore = game.board[move.tr][move.tc];
+  const {board:nb, state:ns} = applyMove(game.board, game, move, promoType);
+
+  game.board = nb;
+  game.castling = ns.castling;
+  game.enPassant = ns.enPassant;
+
+  if(move.capture){
+    let capturedPiece = targetBefore;
+    if(move.enPassantCapture){ capturedPiece = {type:"p", color: opp(mover.color)}; }
+    if(capturedPiece){
+      game.captured[mover.color].push(capturedPiece);
+    }
+  }
+
+  const fromSq = move.r+","+move.c;
+  lastMove = {r:move.r,c:move.c,tr:move.tr,tc:move.tc};
+  game.lastMoveMarker = lastMove;
+
+  const nextTurn = opp(mover.color);
+  game.turn = nextTurn;
+
+  const inCheck = isInCheck(game.board, game, nextTurn);
+  const moves = allLegalMoves(game.board, game, nextTurn);
+  if(moves.length===0){
+    game.status = inCheck? "checkmate":"stalemate";
+    game.winner = inCheck? mover.color : null;
+  } else {
+    game.status = inCheck? "check":"playing";
+  }
+
+  let moveDesc = `${mover.color==="w"?"Beyaz":"Siyah"} bir taş oynadı`;
+  if(move.capture) moveDesc += " ve rakibi yedi!";
+  if(game.status==="checkmate") moveDesc = `♛ ŞAH MAT! ${mover.color==="w"?"Beyaz":"Siyah"} kazandı!`;
+  game.chat = game.chat || [];
+  game.chat.push({type:"system", text: moveDesc, ts: Date.now()});
+  if(game.chat.length>60) game.chat = game.chat.slice(-60);
+
+  game.updatedAt = Date.now();
+
+  selected = null; selectedLegal = [];
+  renderAll();
+
+  if(move.capture){
+    playFx("💥", null);
+  }
+  if(game.status==="checkmate"){
+    playFx("👑", "ŞAH MAT!");
+  } else if(game.status==="check"){
+    playFx("⚡", "ŞAH!");
+  }
+
+  if(mode==="online"){
+    await storeSet(roomKey(), game, true);
+  }
+}
+
+function handleBoardClick(evt){
+  if(game.status==="checkmate" || game.status==="stalemate" || game.status==="resigned") return;
+  if(!myTurnAllowed()) return;
+
+  const rect = els.boardCanvas.getBoundingClientRect();
+  const clientX = evt.touches? evt.touches[0].clientX : evt.clientX;
+  const clientY = evt.touches? evt.touches[0].clientY : evt.clientY;
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  const cellSize = rect.width/8;
+  let cc = Math.floor(x/cellSize);
+  let rr = Math.floor(y/cellSize);
+  const flip = (mode==="online" && myColor==="b");
+  const c = flip? 7-cc: cc;
+  const r = flip? 7-rr: rr;
+  if(!inBounds(r,c)) return;
+
+  const piece = game.board[r][c];
+
+  if(selected){
+    const mv = selectedLegal.find(m=>m.tr===r && m.tc===c);
+    if(mv){
+      if(mv.promotion){
+        pendingPromotion = {...mv};
+        showPromotionModal(game.board[selected.r][selected.c].color);
+        return;
+      }
+      commitMove(mv);
+      return;
+    }
+    // reselect
+    if(piece && piece.color===game.turn){
+      selected = {r,c};
+      selectedLegal = legalMoves(game.board, r, c, game);
+    } else {
+      selected = null; selectedLegal=[];
+    }
+    drawBoard();
+    return;
+  }
+
+  if(piece && piece.color===game.turn){
+    selected = {r,c};
+    selectedLegal = legalMoves(game.board, r, c, game);
+    drawBoard();
+  }
+}
+
+/* promotion modal */
+function showPromotionModal(color){
+  const overlay = document.createElement("div");
+  overlay.className="modal-overlay";
+  overlay.id="promoOverlay";
+  const options=[["q","Vezir"],["r","Kale"],["b","Fil"],["n","At"]];
+  overlay.innerHTML = `<div class="modal">
+    <h3>TERFİ!</h3>
+    <p class="hint">Piyon hangi taşa dönüşsün?</p>
+    <div class="promo-row" id="promoRow"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const row = overlay.querySelector("#promoRow");
+  options.forEach(([type,label])=>{
+    const wrap=document.createElement("div");
+    wrap.className="promo-choice";
+    const cv=document.createElement("canvas");
+    cv.width=40; cv.height=40; cv.style.width="40px"; cv.style.height="40px";
+    wrap.appendChild(cv);
+    const lab=document.createElement("div");
+    lab.style.fontSize="13px"; lab.textContent=label;
+    wrap.appendChild(lab);
+    wrap.addEventListener("click", ()=>{
+      overlay.remove();
+      const mv = pendingPromotion;
+      pendingPromotion=null;
+      commitMove(mv, type);
+    });
+    row.appendChild(wrap);
+    // draw mini piece scaled to 40
+    const c2=cv.getContext("2d"); c2.imageSmoothingEnabled=false;
+    const grid=SPRITES[type];
+    const cell=40/10, pad=cell;
+    const fill = color==="w"?getCss("--white-piece"):getCss("--black-piece");
+    for(let gr=0; gr<8; gr++) for(let gc=0; gc<8; gc++){
+      if(grid[gr][gc]==="#"){ c2.fillStyle=fill; c2.fillRect(pad+gc*cell,pad+gr*cell,cell+0.6,cell+0.6); }
+    }
+  });
+}
+
+/* =========================================================
+   EVENTS
+========================================================= */
+els.btnCreate.addEventListener("click", createRoom);
+els.btnJoin.addEventListener("click", joinRoom);
+els.btnLocal.addEventListener("click", startLocal);
+els.btnLeaveLobby.addEventListener("click", ()=>{ stopPoll(); showScreen("menu"); });
+els.btnSendChat.addEventListener("click", sendChatText);
+els.chatInput.addEventListener("keydown", e=>{ if(e.key==="Enter") sendChatText(); });
+els.btnExit.addEventListener("click", ()=>{
+  stopPoll();
+  if(confirm("Oyundan çıkmak istediğine emin misin?")){ showScreen("menu"); }
+});
+els.btnResign.addEventListener("click", async ()=>{
+  if(!confirm("Pes etmek istediğine emin misin?")) return;
+  const myC = mode==="local" ? game.turn : myColor;
+  game.status="resigned";
+  game.winner = opp(myC);
+  game.chat.push({type:"system", text:`${myC==="w"?game.players.white:game.players.black} pes etti.`, ts:Date.now()});
+  game.updatedAt = Date.now();
+  renderAll();
+  if(mode==="online") await storeSet(roomKey(), game, true);
+});
+
+els.boardCanvas.addEventListener("click", handleBoardClick);
+window.addEventListener("resize", ()=>{ if(!els.screenGame.classList.contains("hidden")) resizeCanvas(); });
+
+/* init */
+showScreen("menu");
+
+})();
+</script>
+</body>
+</html>
