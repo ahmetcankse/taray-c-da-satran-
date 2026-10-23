@@ -1,2 +1,2 @@
-# taray-c-da-satran-
-boktan tarayıcıda oynanan satranç
+# tarayicida-satranc-
+boktan tarayıcıda oynanan satranc
