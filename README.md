@@ -1,2 +1,2 @@
-# tarayicida-satranc-
+# web-satranc-
 boktan tarayıcıda oynanan satranc
